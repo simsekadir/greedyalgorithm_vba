@@ -1,0 +1,43 @@
+Sub UpdateStatusAndFinishingTime()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Assignment") ' Adjust sheet name as needed
+    
+    Dim currentTime As Long
+    currentTime = ws.Range("K5").Value ' Assuming current time is in K5
+    
+    Dim taskTimes As Range
+    Set taskTimes = ws.Range("C2:C27") ' Assuming Task Times are in C2:C27
+    
+    Dim assignedStations As Range
+    Set assignedStations = ws.Range("E2:E27") ' Assuming Assigned Stations are in E2:E27
+    
+    Dim statuses As Range
+    Set statuses = ws.Range("G2:G27") ' Assuming Statuses are in G2:G27
+    
+    Dim finishingTimes As Range
+    Set finishingTimes = ws.Range("H2:H27") ' Assuming Finishing Times are in H2:H27
+    
+    Dim i As Integer
+    Dim finishingTimeA As Long, finishingTimeB As Long
+    finishingTimeA = 0: finishingTimeB = 0
+    
+    For i = 1 To taskTimes.Rows.Count
+        If assignedStations.Cells(i, 1).Value = "A" Then
+            finishingTimeA = finishingTimeA + taskTimes.Cells(i, 1).Value
+            If finishingTimeA <= currentTime Then
+                statuses.Cells(i, 1).Value = "Finished in time"
+            Else
+                statuses.Cells(i, 1).Value = "In-process"
+            End If
+            finishingTimes.Cells(i, 1).Value = finishingTimeA
+        Else
+            finishingTimeB = finishingTimeB + taskTimes.Cells(i, 1).Value
+            If finishingTimeB <= currentTime Then
+                statuses.Cells(i, 1).Value = "Finished in time"
+            Else
+                statuses.Cells(i, 1).Value = "In-process"
+            End If
+            finishingTimes.Cells(i, 1).Value = finishingTimeB
+        End If
+    Next i
+End Sub
