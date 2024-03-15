@@ -1,0 +1,66 @@
+Sub AssignTasksToStations()
+    Dim ws As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim taskTimes() As Variant
+    Dim stationA As Long, stationB As Long
+    Dim currentTime As Long
+    
+    ' Define the worksheet
+    Set ws = ThisWorkbook.Sheets("Assignment") ' Change "Sheet1" to the name of your worksheet
+    
+    ' Find the last row with data in column A (Tasks)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Check if there is data to process
+    If lastRow < 2 Then
+        MsgBox "No data found in column A.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Load task times into an array
+    taskTimes = ws.Range("C2:C" & lastRow).Value
+    
+    ' Check the size of the taskTimes array
+    If UBound(taskTimes, 1) <> lastRow - 1 Then
+        MsgBox "Error loading task times.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Initialize stations
+    stationA = 0
+    stationB = 0
+    
+    ' Sort tasks by processing time in descending order
+    For i = 2 To lastRow
+        For j = i + 1 To lastRow
+            If taskTimes(i - 1, 1) < taskTimes(j - 1, 1) Then
+                ' Swap task times
+                temp = taskTimes(i - 1, 1)
+                taskTimes(i - 1, 1) = taskTimes(j - 1, 1)
+                taskTimes(j - 1, 1) = temp
+                
+                ' Swap tasks in column A
+                temp = ws.Cells(i, 1).Value
+                ws.Cells(i, 1).Value = ws.Cells(j, 1).Value
+                ws.Cells(j, 1).Value = temp
+                
+                ' Swap task times in column C (Task Times)
+                temp = ws.Cells(i, 3).Value
+                ws.Cells(i, 3).Value = ws.Cells(j, 3).Value
+                ws.Cells(j, 3).Value = temp
+            End If
+        Next j
+    Next i
+    
+    ' Assign tasks to stations based on the algorithm
+    For i = 2 To lastRow
+        If stationA <= stationB Then
+            ws.Cells(i, 5).Value = "A" ' Assign to Station A
+            stationA = stationA + taskTimes(i - 1, 1)
+        Else
+            ws.Cells(i, 5).Value = "B" ' Assign to Station B
+            stationB = stationB + taskTimes(i - 1, 1)
+        End If
+        ws.Cells(i, 6).Value = Application.WorksheetFunction.CountIf(ws.Range("E2:E" & i), ws.Cells(i, 5).Value)
+    Next i
+End Sub
