@@ -41,3 +41,65 @@ Sub UpdateStatusAndFinishingTime()
         End If
     Next i
 End Sub
+********************************************************************************************************************************
+Sub CollectMachineJobsAndFinishTime()
+    Dim ws As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim taskTimes() As Variant
+    Dim assignedStations() As Variant
+    Dim currentTime As Long
+    Dim finishingTimeA As Long, finishingTimeB As Long
+    Dim machineJobsA As String, machineJobsB As String
+    
+    ' Define the worksheet
+    Set ws = ThisWorkbook.Sheets("Assignment") ' Change "Assignment" to the name of your worksheet
+    
+    ' Find the last row with data in column A (Tasks)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Check if there is data to process
+    If lastRow < 2 Then
+        MsgBox "No data found in column A.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Load task times and assigned stations into arrays
+    taskTimes = ws.Range("C2:C" & lastRow).Value
+    assignedStations = ws.Range("E2:E" & lastRow).Value
+    
+    ' Get the current time from cell K5
+    currentTime = ws.Range("K5").Value
+    
+    ' Initialize variables
+    finishingTimeA = currentTime ' Initialize finishing time for Station A
+    finishingTimeB = currentTime ' Initialize finishing time for Station B
+    machineJobsA = ""
+    machineJobsB = ""
+    
+    ' Loop through tasks to collect machine jobs and finish times
+    For i = 1 To lastRow - 1
+        If assignedStations(i, 1) = "A" Then
+            If finishingTimeA <= currentTime Then
+                machineJobsA = machineJobsA & ws.Cells(i + 1, 1).Value & ", "
+            Else
+                machineJobsA = machineJobsA & ws.Cells(i + 1, 1).Value & " (late), "
+            End If
+            finishingTimeA = finishingTimeA + taskTimes(i, 1) ' Update finishing time for Station A
+        ElseIf assignedStations(i, 1) = "B" Then
+            If finishingTimeB <= currentTime Then
+                machineJobsB = machineJobsB & ws.Cells(i + 1, 1).Value & ", "
+            Else
+                machineJobsB = machineJobsB & ws.Cells(i + 1, 1).Value & " (late), "
+            End If
+            finishingTimeB = finishingTimeB + taskTimes(i, 1) ' Update finishing time for Station B
+        End If
+    Next i
+    
+    ' Trim trailing comma and space from machine job lists
+    machineJobsA = Left(machineJobsA, Len(machineJobsA) - 2)
+    machineJobsB = Left(machineJobsB, Len(machineJobsB) - 2)
+    
+    ' Output the machine jobs and finishing times
+    ws.Range("K13").Value = "Machine A: " & machineJobsA & " (Finish Time: " & finishingTimeA & ")"
+    ws.Range("K14").Value = "Machine B: " & machineJobsB & " (Finish Time: " & finishingTimeB & ")"
+End Sub
