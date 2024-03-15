@@ -103,3 +103,59 @@ Sub CollectMachineJobsAndFinishTime()
     ws.Range("K13").Value = "Machine A: " & machineJobsA & " (Finish Time: " & finishingTimeA & ")"
     ws.Range("K14").Value = "Machine B: " & machineJobsB & " (Finish Time: " & finishingTimeB & ")"
 End Sub
+******************************************************************************************************************************
+Sub CollectMachineJobsAndFinishTime()
+    Dim ws As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim taskTimes() As Variant
+    Dim assignedStations() As Variant
+    Dim currentTime As Long
+    Dim finishingTimeA As Long, finishingTimeB As Long
+    Dim machineJobsA As String, machineJobsB As String
+    Dim statusColumn As Range
+    
+    ' Define the worksheet
+    Set ws = ThisWorkbook.Sheets("Assignment") ' Change "Assignment" to the name of your worksheet
+    
+    ' Find the last row with data in column A (Tasks)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Check if there is data to process
+    If lastRow < 2 Then
+        MsgBox "No data found in column A.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Load task times and assigned stations into arrays
+    taskTimes = ws.Range("C2:C" & lastRow).Value
+    assignedStations = ws.Range("E2:E" & lastRow).Value
+    
+    ' Get the current time from cell K5
+    currentTime = ws.Range("K5").Value
+    
+    ' Initialize variables
+    machineJobsA = ""
+    machineJobsB = ""
+    
+    ' Loop through tasks to collect machine jobs and finish times
+    For i = 1 To lastRow - 1
+        If assignedStations(i, 1) = "A" Then
+            If currentTime >= finishingTimeA Then
+                ws.Cells(i + 1, 7).Value = "Finished"
+            Else
+                ws.Cells(i + 1, 7).Value = "In progress"
+            End If
+            finishingTimeA = finishingTimeA + taskTimes(i, 1) ' Update finishing time for Station A
+            ws.Cells(i + 1, 8).Value = finishingTimeA ' Write finishing time for Station A to column H
+        ElseIf assignedStations(i, 1) = "B" Then
+            If currentTime >= finishingTimeB Then
+                ws.Cells(i + 1, 7).Value = "Finished"
+            Else
+                ws.Cells(i + 1, 7).Value = "In progress"
+            End If
+            finishingTimeB = finishingTimeB + taskTimes(i, 1) ' Update finishing time for Station B
+            ws.Cells(i + 1, 8).Value = finishingTimeB ' Write finishing time for Station B to column H
+        End If
+    Next i
+End Sub
+
