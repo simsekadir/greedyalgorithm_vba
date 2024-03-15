@@ -1,0 +1,164 @@
+Sub AssignTasksToStations()
+    Dim ws As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim taskTimes() As Variant
+    Dim stationA As Long, stationB As Long
+    Dim currentTime As Long
+    
+    ' Define the worksheet
+    Set ws = ThisWorkbook.Sheets("Assignment") ' Change "Sheet1" to the name of your worksheet
+    
+    ' Find the last row with data in column A (Tasks)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Check if there is data to process
+    If lastRow < 2 Then
+        MsgBox "No data found in column A.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Load task times into an array
+    taskTimes = ws.Range("C2:C" & lastRow).Value
+    
+    ' Check the size of the taskTimes array
+    If UBound(taskTimes, 1) <> lastRow - 1 Then
+        MsgBox "Error loading task times.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Initialize stations
+    stationA = 0
+    stationB = 0
+    
+    ' Sort tasks by processing time in descending order
+    For i = 2 To lastRow
+        For j = i + 1 To lastRow
+            If taskTimes(i - 1, 1) < taskTimes(j - 1, 1) Then
+                ' Swap task times
+                temp = taskTimes(i - 1, 1)
+                taskTimes(i - 1, 1) = taskTimes(j - 1, 1)
+                taskTimes(j - 1, 1) = temp
+                
+                ' Swap tasks in column A
+                temp = ws.Cells(i, 1).Value
+                ws.Cells(i, 1).Value = ws.Cells(j, 1).Value
+                ws.Cells(j, 1).Value = temp
+                
+                ' Swap task times in column C (Task Times)
+                temp = ws.Cells(i, 3).Value
+                ws.Cells(i, 3).Value = ws.Cells(j, 3).Value
+                ws.Cells(j, 3).Value = temp
+            End If
+        Next j
+    Next i
+    
+    ' Assign tasks to stations based on the algorithm
+    For i = 2 To lastRow
+        If stationA <= stationB Then
+            ws.Cells(i, 5).Value = "A" ' Assign to Station A
+            stationA = stationA + taskTimes(i - 1, 1)
+        Else
+            ws.Cells(i, 5).Value = "B" ' Assign to Station B
+            stationB = stationB + taskTimes(i - 1, 1)
+        End If
+        ws.Cells(i, 6).Value = Application.WorksheetFunction.CountIf(ws.Range("E2:E" & i), ws.Cells(i, 5).Value)
+    Next i
+End Sub
+
+Sub ViewStatus()
+    Dim ws As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim taskTimes() As Variant
+    Dim assignedStations() As Variant
+    Dim currentTime As Long
+    Dim finishingTimeA As Long, finishingTimeB As Long
+    Dim currentTaskA As String, nextTaskA As String
+    Dim currentTaskB As String, nextTaskB As String
+    
+    ' Define the worksheet
+    Set ws = ThisWorkbook.Sheets("Assignment") ' Change "Assignment" to the name of your worksheet
+    
+    ' Find the last row with data in column A (Tasks)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Check if there is data to process
+    If lastRow < 2 Then
+        MsgBox "No data found in column A.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Load task times and assigned stations into arrays
+    taskTimes = ws.Range("C2:C" & lastRow).Value
+    assignedStations = ws.Range("E2:E" & lastRow).Value
+    
+    ' Get the current time from cell K5
+    currentTime = ws.Range("K5").Value
+    
+    ' Initialize variables
+    currentTaskA = ""
+    nextTaskA = ""
+    currentTaskB = ""
+    nextTaskB = ""
+    
+    ' Loop through tasks to collect machine jobs and finish times
+    For i = 1 To lastRow - 1
+        If assignedStations(i, 1) = "A" Then
+            If finishingTimeA <= currentTime Then
+                currentTaskA = ws.Cells(i + 1, 1).Value ' Update current task for machine A
+                ws.Cells(i + 1, 7).Value = "Finished"
+            Else
+                If currentTaskA = "" Then
+                    currentTaskA = ws.Cells(i, 1).Value ' Get the current task for machine A
+                End If
+                If nextTaskA = "" Then
+                    nextTaskA = ws.Cells(i + 1, 1).Value ' Get the next task for machine A
+                    ws.Cells(i + 1, 7).Value = "In progress"
+                End If
+            End If
+            finishingTimeA = finishingTimeA + taskTimes(i, 1) ' Update finishing time for Station A
+            ws.Cells(i + 1, 8).Value = finishingTimeA ' Write finishing time for Station A to column H
+        ElseIf assignedStations(i, 1) = "B" Then
+            If finishingTimeB <= currentTime Then
+                currentTaskB = ws.Cells(i + 1, 1).Value ' Update current task for machine B
+                ws.Cells(i + 1, 7).Value = "Finished"
+            Else
+                If currentTaskB = "" Then
+                    currentTaskB = ws.Cells(i, 1).Value ' Get the current task for machine B
+                End If
+                If nextTaskB = "" Then
+                    nextTaskB = ws.Cells(i + 1, 1).Value ' Get the next task for machine B
+                    ws.Cells(i + 1, 7).Value = "In progress"
+                End If
+            End If
+            finishingTimeB = finishingTimeB + taskTimes(i, 1) ' Update finishing time for Station B
+            ws.Cells(i + 1, 8).Value = finishingTimeB ' Write finishing time for Station B to column H
+        End If
+    Next i
+    
+    ' Output the current tasks and next tasks for each machine
+    ws.Range("K13").Value = currentTaskA
+    ws.Range("L13").Value = nextTaskA
+    ws.Range("K14").Value = currentTaskB
+    ws.Range("L14").Value = nextTaskB
+End Sub
+
+Sub ClearColumnG()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    
+    ' Define the worksheet
+    Set ws = ThisWorkbook.Sheets("Assignment") ' Change "Assignment" to the name of your worksheet
+    
+    ' Find the last row with data in column A (Tasks)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Clear cells in column G
+    ws.Range("G2:G" & lastRow).ClearContents
+    ws.Range("K13:K14").ClearContents
+    ws.Range("L13:L14").ClearContents
+End Sub
+
+
+
+
+
